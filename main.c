@@ -9,15 +9,17 @@
 
 #include "nsh.c"
 #include "benchmark/shm.c"
-#include "benchmark/unix.c"
-#include "benchmark/tcp.c"
+//#include "benchmark/unix.c"
+//#include "benchmark/tcp.c"
 
 int times = 1;
 
 int main() {
+    printf("aaaa");
+
     //shm_test();
 
-    printf("        Shm: %f IO/s\n", shm_benchmark());
     //printf("Unix socket: %f IO/s\n", unix_benchmark());
+    printf("        Shm: %f IO/s\n", shm_benchmark());
     return 0;
 }

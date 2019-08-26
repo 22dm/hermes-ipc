@@ -1,5 +1,5 @@
-char unix_buf[1024];
-int unix_buf_size = 1024;
+char unix_buf[37200000];
+int unix_buf_size = 37200000;
 
 extern int times;
 
@@ -22,6 +22,25 @@ void unix_pre(){
     bind(unix_recvfd, unix_addr, unix_addr_len);
 }
 
+void* unix_send_big(){
+    //发送
+    char *data = malloc(3720001);
+    const char *str = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+
+    for(int i = 0; i < 10000; i++){
+        memcpy(data + i * 372, str, 372);
+    }
+
+    data[3720000] = 0;
+
+    for (long i = 0; i < times; i++) {
+        struct nsh_packet *pkt = malloc(3720000);
+        memcpy(pkt, data, 3720000);
+        sendto(unix_sendfd, data, 3720000, 0, unix_addr, unix_addr_len);
+    }
+}
+
 void* unix_send(){
     //发送
     const char *str = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -35,12 +54,14 @@ void* unix_recv(){
     //接收
     for (long i = 0; i < times; i++) {
         int size = recvfrom(unix_recvfd, unix_buf, unix_buf_size, 0, unix_addr, &unix_addr_len);
+        struct nsh_packet *pkt = malloc(3720000);
+        memcpy(pkt, unix_buf, 3720000);
     }
 }
 
 void unix_run() {
     pthread_t send;
-    pthread_create(&send, NULL, unix_send, NULL);
+    pthread_create(&send, NULL, unix_send_big, NULL);
 
     pthread_t recv;
     pthread_create(&recv, NULL, unix_recv, NULL);
