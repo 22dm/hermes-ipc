@@ -3,56 +3,94 @@
 #include <sys/socket.h>
 #include <zconf.h>
 #include <sys/un.h>
+#include <pthread.h>
+
+//#define DEBUG
+
 #include "nsh.c"
 
 char buf[1024];
 int buf_size = 1024;
+
+int times = 100000;
 
 int sockfd;
 struct sockaddr * addr;
 socklen_t addrLen = sizeof(struct sockaddr_un);
 
 void IOShmPre() {
-    printf("pre\n");
-
+    shm_unlink("/Users/nyako/echo.sock");
     nsh_bind(sockfd, addr, addrLen);
 }
 
-void IOShmRun() {
-    printf("run\n");
-
-    printf("send\n");
+void* IOShmSend(){
     //发送
-    const char *str = "123456789012345678901234567890";
-    nsh_sendto(sockfd, str, strlen(str), 0, addr, addrLen);
+    const char *str = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-    printf("recv\n");
+    for (long i = 0; i < times; i++) {
+        nsh_sendto(sockfd, str, strlen(str), 0, addr, addrLen);
+    }
+}
+
+void* IOShmRecv(){
     //接收
-    int size = nsh_recvfrom(sockfd, buf, buf_size, 0, addr, &addrLen);
-    buf[size] = 0;
-    printf("%s", buf);
+    for (long i = 0; i < times; i++) {
+        int size = nsh_recvfrom(sockfd, buf, buf_size, 0, addr, &addrLen);
+    }
+    //printf("%s", buf);
+};
+
+void IOShmRun() {
+
+    pthread_t send;
+    pthread_create(&send, NULL, IOShmSend, NULL);
+
+    pthread_t recv;
+    pthread_create(&recv, NULL, IOShmRecv, NULL);
+
+    pthread_join(send, NULL);
+    pthread_join(recv, NULL);
 }
 
 void IOShmClean(){
-    printf("clean\n");
 }
 
+int sendfd, recvfd;
 
 void IOUnixPre(){
     //发送句柄
-    sockfd = socket(AF_UNIX, SOCK_DGRAM, 0);
+    sendfd = socket(AF_UNIX, SOCK_STREAM, 0);
+    recvfd = socket(AF_UNIX, SOCK_STREAM, 0);
     unlink("/Users/nyako/echo.sock");
-    bind(sockfd, addr, addrLen);
+    bind(recvfd, addr, addrLen);
+}
+
+void* IOUnixSend(){
+    //发送
+    const char *str = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+    for (long i = 0; i < times; i++) {
+        sendto(sendfd, str, strlen(str), 0, addr, addrLen);
+    }
+}
+
+void* IOUnixRecv(){
+    //接收
+    for (long i = 0; i < times; i++) {
+        int size = recvfrom(recvfd, buf, buf_size, 0, addr, &addrLen);
+    }
 }
 
 void IOUnixRun() {
-    //发送
-    const char *str = "123456789012345678901234567890";
-    sendto(sockfd, str, strlen(str), 0, addr, addrLen);
+    pthread_t send;
+    pthread_create(&send, NULL, IOUnixSend, NULL);
 
-    //接收
-    int size = recvfrom(sockfd, buf, buf_size, 0, addr, &addrLen);
-    size++;
+    pthread_t recv;
+    pthread_create(&recv, NULL, IOUnixRecv, NULL);
+
+    pthread_join(send, NULL);
+    pthread_join(recv, NULL);
+
 }
 
 void IOUnixClean(){
@@ -64,10 +102,7 @@ void IOUnixClean(){
 double benchmarkShm() {
     IOShmPre();
     clock_t start = clock();
-    long times = 1000000;
-    for (long i = 0; i < times; i++) {
-        IOShmRun();
-    }
+    IOShmRun();
     clock_t end = clock();
     double IOps = (double) times / ((double) (end - start) / CLOCKS_PER_SEC);
     IOShmClean();
@@ -75,7 +110,6 @@ double benchmarkShm() {
 }
 
 void testShm(){
-    printf("test\n");
     IOShmPre();
     IOShmRun();
     IOShmClean();
@@ -83,11 +117,8 @@ void testShm(){
 
 double benchmarkUnix(){
     IOUnixPre();
-    long times = 1000000;
     clock_t start = clock();
-    for (long i = 0; i < times; i++) {
-        IOUnixRun();
-    }
+    IOUnixRun();
     clock_t end = clock();
     double IOps = (double) times / ((double) (end - start) / CLOCKS_PER_SEC);
     IOUnixClean();
@@ -108,13 +139,19 @@ int main() {
     strcpy(servaddr->sun_path, "/Users/nyako/echo.sock");
     addr = (struct sockaddr *) servaddr;
 
-    printf("1111\n");
+    //testShm();
 
-    testShm();
-
-    printf("2222\n");
-
-    //printf("Ring: %f IO/s\n", benchmarkShm());
-    //printf("Unix socket: %f IO/s\n", benchmarkUnix());
+    printf("        Shm: %f IO/s\n", benchmarkShm());
+    printf("Unix socket: %f IO/s\n", benchmarkUnix());
+    printf("        Shm: %f IO/s\n", benchmarkShm());
+    printf("Unix socket: %f IO/s\n", benchmarkUnix());
+    printf("        Shm: %f IO/s\n", benchmarkShm());
+    printf("Unix socket: %f IO/s\n", benchmarkUnix());
+    printf("        Shm: %f IO/s\n", benchmarkShm());
+    printf("Unix socket: %f IO/s\n", benchmarkUnix());
+    printf("        Shm: %f IO/s\n", benchmarkShm());
+    printf("Unix socket: %f IO/s\n", benchmarkUnix());
+    printf("        Shm: %f IO/s\n", benchmarkShm());
+    printf("Unix socket: %f IO/s\n", benchmarkUnix());
     return 0;
 }

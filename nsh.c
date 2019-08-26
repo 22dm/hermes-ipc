@@ -28,7 +28,7 @@ ring get_ring(const struct sockaddr *addr) {
 
     if (i == buffer_pos) {
         strcpy(buffer_file[buffer_pos], file);
-        ring ring = init_ring(1000, file);
+        ring ring = init_ring(8192, file);
         buffer_ring[buffer_pos] = ring;
         buffer_pos++;
         return ring;
@@ -43,17 +43,30 @@ void nsh_bind(int fd, const struct sockaddr *addr, socklen_t addrlen) {
 
 int nsh_recvfrom(int fd, void *buf, size_t buf_size, int state, const struct sockaddr *addr, socklen_t *addrlen) {
     ring ring = get_ring(addr);
-    int data_size = *(int *) (ring + sizeof(struct ring_struct) + 4);
-    printf("%d", data_size);
+    printf("kkkkkkk");
+    int data_size = *((int *)ring + 3);
+    printf("kkk: %d", data_size);
+    //int data_size = 372;
+#ifdef DEBUG
+    printf("数据部分大小: %d\n", data_size);
+#endif
     int pkt_size = data_size + sizeof(struct nsh_packet);
-    printf("%d", pkt_size);
+#ifdef DEBUG
+    printf("数据包大小: %d\n", pkt_size);
+#endif
     struct nsh_packet *pkt = malloc(pkt_size);
     int recv_size = 0;
     while (recv_size < pkt_size) {
-        recv_size += recv_ring(ring, pkt + recv_size, pkt_size - recv_size);
+        recv_size += recv_ring(ring, (void *)pkt + recv_size, pkt_size - recv_size);
+#ifdef DEBUG
+        printf("已读取大小: %d\n", recv_size);
+        printf("已读取数据：%s\n", pkt->data);
+#endif
     }
     int write_size = data_size < buf_size ? data_size : buf_size;
-    printf("recv: %s\n", pkt->data);
+#ifdef DEBUG
+    printf("数据部分: %s\n", pkt->data);
+#endif
     memcpy(buf, pkt->data, write_size);
     return write_size;
 }
