@@ -1,23 +1,16 @@
-//
-// Created by nyako on 2019-08-25.
-//
-
 #include <string.h>
-
 
 #define RING_SIZE 8192
 
-struct ring_struct {
+struct ring {
     int read_offset; //下一次从哪里开始读
     int write_offset; //下一次从哪里开始写
     int size; //环形队列大小，一次的最大写入量为 size - 1
     char data[RING_SIZE]; //环形队列
 };
 
-typedef struct ring_struct *ring;
-
 //读取数据，只读一次
-int recv_ring(ring ring, void *buf, int buf_size) {
+int ring_recv(struct ring * ring, void *buf, int buf_size) {
     int read_size;
     int max_read;
     int ring_size = ring->size;
@@ -44,7 +37,7 @@ int recv_ring(ring ring, void *buf, int buf_size) {
 }
 
 //向环中写入数据
-int send_ring(ring ring, void *buf, int size) {
+int ring_send(struct ring * ring, void *buf, int size) {
     int read_offset;
     int write_offset;
     int ring_size = ring->size;

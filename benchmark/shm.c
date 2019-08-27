@@ -36,7 +36,7 @@ void shm_pre() {
     }
 
     if (nsh_listen(shm_recvfd, 8) < 0) {
-        perror("listen error");
+        perror("listen erroraa");
         exit(1);
     }
 
@@ -82,7 +82,6 @@ void shm_run() {
 }
 
 void shm_clean(){
-    shm_unlink(shm_file);
 }
 
 double shm_benchmark() {
