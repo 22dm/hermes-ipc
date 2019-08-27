@@ -3,20 +3,51 @@ char shm_buf[shm_buf_size];
 
 extern int times;
 
-int shm_fd;
+int shm_sendfd, shm_recvfd;
+int new_fd;
 
 struct sockaddr * shm_addr;
 socklen_t shm_addr_len = sizeof(struct sockaddr_un);
 const char *shm_file = "/Users/nyako/echo.sock";
 
 void shm_pre() {
+
+    //地址
     struct sockaddr_un * servaddr = calloc(1, sizeof(struct sockaddr_un));
     servaddr->sun_family = AF_UNIX;
     strcpy(servaddr->sun_path, shm_file);
     shm_addr = (struct sockaddr *) servaddr;
 
-    shm_unlink(shm_file);
-    nsh_bind(shm_fd, shm_addr, shm_addr_len);
+    if ((shm_sendfd = nsh_socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
+        perror("socket error");
+        exit(1);
+    }
+
+
+    shm_recvfd = nsh_socket(AF_UNIX, SOCK_STREAM, 0);
+
+
+    unlink(shm_file);
+
+
+    if (nsh_bind(shm_recvfd, shm_addr, shm_addr_len) < 0) {
+        perror("bind error");
+        exit(1);
+    }
+
+    if (nsh_listen(shm_recvfd, 8) < 0) {
+        perror("listen error");
+        exit(1);
+    }
+
+    if (nsh_connect(shm_sendfd, shm_addr, shm_addr_len) < 0) {
+        perror("connect error");
+        exit(-1);
+    }
+
+    if ((new_fd = nsh_accept(shm_recvfd, NULL, NULL)) == -1) {
+        perror("accpet error");
+    }
 }
 
 void* shm_send(){
@@ -24,16 +55,18 @@ void* shm_send(){
     const char *str = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
     for (long i = 0; i < times; i++) {
-        nsh_sendto(shm_fd, str, strlen(str), 0, shm_addr, shm_addr_len);
+        nsh_send(shm_sendfd, str, strlen(str), 0);
     }
 }
 
 void* shm_recv(){
+    int send_size = times * 372;
+    int recv_size = 0;
     //接收
-    for (long i = 0; i < times; i++) {
-        int size = nsh_recvfrom(shm_fd, shm_buf, shm_buf_size, 0, shm_addr, &shm_addr_len);
-        //printf("%d %s", strlen(shm_buf), shm_buf);
+    while (recv_size < send_size){
+        recv_size += nsh_recv(new_fd, shm_buf, shm_buf_size, 0);
     }
+    printf("%d %s", strlen(shm_buf), shm_buf);
 }
 
 void shm_run() {
