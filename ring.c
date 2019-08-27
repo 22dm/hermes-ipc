@@ -3,9 +3,7 @@
 //
 
 #include <string.h>
-#include <sys/mman.h>
-#include <fcntl.h>
-#include <stdlib.h>
+
 
 #define RING_SIZE 8192
 
@@ -18,29 +16,8 @@ struct ring_struct {
 
 typedef struct ring_struct *ring;
 
-const char* file_prefix = "/User/nyako/shm-";
-
-ring init_ring(int fd) {
-    char *file = malloc(100);
-    sprintf(file, "%s%d", file_prefix, fd);
-    int file_fd = shm_open(file, O_CREAT | O_RDWR | O_EXCL, 0777);
-    if (file_fd < 0) { // 对象已存在
-        file_fd = shm_open(file, O_RDWR, 0777);
-    } else { // 新对象，设置大小
-        ftruncate(file_fd, sizeof(struct ring_struct));
-    }
-
-    ring ring = mmap(NULL, sizeof(struct ring_struct), PROT_READ | PROT_WRITE, MAP_SHARED, file_fd, 0);
-    close(file_fd);
-
-    ring->size = RING_SIZE;
-    ring->read_offset = 0;
-    ring->write_offset = 0;
-    return ring;
-}
-
 //读取数据，只读一次
-int recv_ring(ring ring, const void *buf, int buf_size) {
+int recv_ring(ring ring, void *buf, int buf_size) {
     int read_size;
     int max_read;
     int ring_size = ring->size;
@@ -67,7 +44,7 @@ int recv_ring(ring ring, const void *buf, int buf_size) {
 }
 
 //向环中写入数据
-int send_ring(ring ring, const void *buf, int size) {
+int send_ring(ring ring, void *buf, int size) {
     int read_offset;
     int write_offset;
     int ring_size = ring->size;
