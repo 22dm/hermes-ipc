@@ -12,7 +12,7 @@
 #include "benchmark/shm.c"
 #include "benchmark/tcp.c"
 
-int times = 4;
+int times = 100000;
 
 int main() {
     //shm_test();

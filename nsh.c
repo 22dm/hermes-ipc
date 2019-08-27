@@ -141,7 +141,7 @@ int nsh_recv(int fd, void *buf, size_t buf_size, int type) {
     shm_socket shm_socket_obj = shm_sockets[fd];
     int recv_size = 0, total_recv_size = 0;
     do {
-        recv_size = recv_ring(shm_socket_obj->recv_ring, buf, buf_size);
+        recv_size = recv_ring(shm_socket_obj->recv_ring, buf + total_recv_size, buf_size - total_recv_size);
         total_recv_size += recv_size;
     } while (recv_size > 0);
     return total_recv_size;

@@ -66,7 +66,7 @@ void* unix_recv(){
     while (recv_size < send_size){
         recv_size += recv(new_fd, unix_buf, unix_buf_size, 0);
     }
-    printf("%d %s\n", strlen(unix_buf), unix_buf);
+    printf("%d\n", recv_size, unix_buf);
 }
 
 void unix_run() {

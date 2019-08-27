@@ -67,7 +67,8 @@ void* tcp_recv(){
     while (recv_size < send_size){
         recv_size += recv(new_fd, tcp_buf, tcp_buf_size, 0);
     }
-    printf("%d %s\n", strlen(tcp_buf), tcp_buf);
+    printf("%d\n", recv_size, tcp_buf);
+
 }
 
 void tcp_run() {

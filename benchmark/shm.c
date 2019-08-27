@@ -63,10 +63,10 @@ void* shm_recv(){
     int send_size = times * 372;
     int recv_size = 0;
     //接收
-    while (recv_size != send_size){
+    while (recv_size < send_size){
         recv_size += nsh_recv(new_fd, shm_buf, shm_buf_size, 0);
     }
-    printf("%d %s\n", strlen(shm_buf), shm_buf);
+    printf("%d\n", recv_size, shm_buf);
 }
 
 void shm_run() {
