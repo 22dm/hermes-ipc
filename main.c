@@ -12,13 +12,12 @@
 #include "benchmark/shm.c"
 #include "benchmark/tcp.c"
 
-int times = 1000000;
+int times = 4;
 
 int main() {
     //shm_test();
-
-    printf("Shared memory IPC          : %f IO/s\n", shm_benchmark());
-    printf("Unix domain socket (stream): %f IO/s\n", unix_benchmark());
     printf("loopback TCP               : %f IO/s\n", tcp_benchmark());
+    printf("Unix domain socket (stream): %f IO/s\n", unix_benchmark());
+    printf("Shared memory IPC          : %f IO/s\n", shm_benchmark());
     return 0;
 }

@@ -44,7 +44,8 @@ int recv_ring(ring ring, const void *buf, int buf_size) {
     int read_size;
     int max_read;
     int ring_size = ring->size;
-    while (ring->read_offset == ring->write_offset) {
+    if (ring->read_offset == ring->write_offset) {
+        return 0;
     }
     int read_offset = ring->read_offset;
     int write_offset = ring->write_offset;

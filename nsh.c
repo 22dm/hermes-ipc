@@ -77,14 +77,14 @@ int nsh_accept(int fd, struct sockaddr *addr, socklen_t *addr_len) {
             child_recv_ring = init_ring(child_fd);
             shm_child_socket->recv_ring = child_recv_ring;
 
-            for (int i = 0; i < SHM_POOL_SIZE; i++) {
+            for (int j = 0; j < SHM_POOL_SIZE; j++) {
                 shm_socket shm_client_socket_obj = shm_sockets[i];
                 if (shm_client_socket_obj == NULL || shm_client_socket_obj->recv_ring == NULL) {
                     continue;
                 }
                 if (shm_client_socket_obj->recv_ring == child_send_ring) {
                     shm_client_socket_obj->send_ring = child_recv_ring;
-                    return 0;
+                    return child_fd;
                 }
             }
             return -3;
