@@ -3,7 +3,6 @@
 //
 
 #include <string.h>
-#include <stdio.h>
 #include <sys/mman.h>
 #include <fcntl.h>
 
@@ -11,7 +10,7 @@ struct ring_struct {
     int read_offset; //下一次从哪里开始读
     int write_offset; //下一次从哪里开始写
     int size; //环形队列大小，一次的最大写入量为 size - 1
-    char data[0]; //环形队列
+    char data[8192]; //环形队列
 };
 
 struct nsh_packet {
@@ -29,13 +28,13 @@ ring init_ring(int size, const char *file) {
 
     } else {
         // 新对象，设置大小
-        ftruncate(fd, size + sizeof(struct ring_struct));
+        ftruncate(fd, sizeof(struct ring_struct));
     }
 
-    ring ring = mmap(NULL, size + sizeof(struct ring_struct), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    ring ring = mmap(NULL, sizeof(struct ring_struct), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     close(fd);
 
-    ring->size = size;
+    ring->size = 8192;
     ring->read_offset = 0;
     ring->write_offset = 0;
     return ring;
@@ -121,7 +120,7 @@ int send_ring_header(ring ring, struct nsh_packet *buf) {
         }
 
         write_size = max_write < size ? max_write : size;
-        write_size = write_size > 4096 ? 4096 : write_size;
+        write_size = write_size > 128 ? 128 : write_size;
         memcpy(ring->data + ring->write_offset, buf, write_size);
         int after_write_offset = ring->write_offset + write_size;
         if(after_write_offset == ring_size) {

@@ -1,5 +1,5 @@
-char shm_buf[37200000];
-int shm_buf_size = 37200000;
+const int shm_buf_size = 8192;
+char shm_buf[shm_buf_size];
 
 extern int times;
 
@@ -12,28 +12,11 @@ const char *shm_file = "/Users/nyako/echo.sock";
 void shm_pre() {
     struct sockaddr_un * servaddr = calloc(1, sizeof(struct sockaddr_un));
     servaddr->sun_family = AF_UNIX;
-    strcpy(servaddr->sun_path, "/Users/nyako/echo.sock");
+    strcpy(servaddr->sun_path, shm_file);
     shm_addr = (struct sockaddr *) servaddr;
 
     shm_unlink(shm_file);
     nsh_bind(shm_fd, shm_addr, shm_addr_len);
-}
-
-void* shm_send_big(){
-    //发送
-    char *data = malloc(3720001);
-    const char *str = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-
-
-    for(int i = 0; i < 10000; i++){
-        memcpy(data + i * 372, str, 372);
-    }
-
-    data[3720000] = 0;
-
-    for (long i = 0; i < times; i++) {
-        nsh_sendto(shm_fd, data, 3720000, 0, shm_addr, shm_addr_len);
-    }
 }
 
 void* shm_send(){
@@ -49,14 +32,14 @@ void* shm_recv(){
     //接收
     for (long i = 0; i < times; i++) {
         int size = nsh_recvfrom(shm_fd, shm_buf, shm_buf_size, 0, shm_addr, &shm_addr_len);
+        //printf("%d %s", strlen(shm_buf), shm_buf);
     }
-    //printf("%s", shm_buf);
-};
+}
 
 void shm_run() {
 
     pthread_t send;
-    pthread_create(&send, NULL, shm_send_big, NULL);
+    pthread_create(&send, NULL, shm_send, NULL);
 
     pthread_t recv;
     pthread_create(&recv, NULL, shm_recv, NULL);
@@ -70,8 +53,6 @@ void shm_clean(){
 }
 
 double shm_benchmark() {
-    printf("aaaa");
-
     shm_pre();
     clock_t start = clock();
     shm_run();

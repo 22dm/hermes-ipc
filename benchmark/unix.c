@@ -1,43 +1,52 @@
-char unix_buf[37200000];
-int unix_buf_size = 37200000;
+const int unix_buf_size = 8192;
+char unix_buf[unix_buf_size];
 
 extern int times;
 
 int unix_sendfd, unix_recvfd;
+int new_fd;
 
 struct sockaddr * unix_addr;
 socklen_t unix_addr_len = sizeof(struct sockaddr_un);
 const char *unix_file = "/Users/nyako/echo.sock";
 
 void unix_pre(){
-    struct sockaddr_un * servaddr = calloc(1, sizeof(struct sockaddr_un));
+
+    //地址
+    struct sockaddr_un * servaddr = calloc(1, sizeof(servaddr));
     servaddr->sun_family = AF_UNIX;
-    strcpy(servaddr->sun_path, "/Users/nyako/echo.sock");
+    strcpy(servaddr->sun_path, unix_file);
     unix_addr = (struct sockaddr *) servaddr;
 
-    //发送句柄
-    unix_sendfd = socket(AF_UNIX, SOCK_STREAM, 0);
-    unix_recvfd = socket(AF_UNIX, SOCK_STREAM, 0);
-    unlink(unix_file);
-    bind(unix_recvfd, unix_addr, unix_addr_len);
-}
-
-void* unix_send_big(){
-    //发送
-    char *data = malloc(3720001);
-    const char *str = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-
-
-    for(int i = 0; i < 10000; i++){
-        memcpy(data + i * 372, str, 372);
+    //
+    if ((unix_sendfd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
+        perror("socket error");
+        exit(1);
     }
 
-    data[3720000] = 0;
 
-    for (long i = 0; i < times; i++) {
-        struct nsh_packet *pkt = malloc(3720000);
-        memcpy(pkt, data, 3720000);
-        sendto(unix_sendfd, data, 3720000, 0, unix_addr, unix_addr_len);
+    unix_recvfd = socket(AF_UNIX, SOCK_STREAM, 0);
+
+
+    unlink(unix_file);
+
+    if (bind(unix_recvfd, unix_addr, unix_addr_len) < 0) {
+        perror("bind error");
+        exit(1);
+    }
+
+    if (listen(unix_recvfd, 8) < 0) {
+        perror("listen error");
+        exit(1);
+    }
+
+    if (connect(unix_sendfd, unix_addr, unix_addr_len) < 0) {
+        perror("connect error");
+        exit(-1);
+    }
+
+    if ((new_fd = accept(unix_recvfd, NULL, NULL)) == -1) {
+        perror("accpet error");
     }
 }
 
@@ -46,22 +55,22 @@ void* unix_send(){
     const char *str = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
     for (long i = 0; i < times; i++) {
-        sendto(unix_sendfd, str, strlen(str), 0, unix_addr, unix_addr_len);
+        send(unix_sendfd, str, strlen(str), 0);
     }
 }
 
 void* unix_recv(){
+    int send_size = times * 372;
+    int recv_size = 0;
     //接收
-    for (long i = 0; i < times; i++) {
-        int size = recvfrom(unix_recvfd, unix_buf, unix_buf_size, 0, unix_addr, &unix_addr_len);
-        struct nsh_packet *pkt = malloc(3720000);
-        memcpy(pkt, unix_buf, 3720000);
+    while (recv_size < send_size){
+        recv_size += recv(new_fd, unix_buf, unix_buf_size, 0);
     }
 }
 
 void unix_run() {
     pthread_t send;
-    pthread_create(&send, NULL, unix_send_big, NULL);
+    pthread_create(&send, NULL, unix_send, NULL);
 
     pthread_t recv;
     pthread_create(&recv, NULL, unix_recv, NULL);
@@ -78,6 +87,7 @@ void unix_clean(){
 }
 
 double unix_benchmark(){
+    unix_clean();
     unix_pre();
     clock_t start = clock();
     unix_run();
@@ -88,6 +98,7 @@ double unix_benchmark(){
 }
 
 void unix_test(){
+    unix_clean();
     unix_pre();
     unix_run();
     unix_clean();

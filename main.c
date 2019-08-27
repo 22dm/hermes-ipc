@@ -8,18 +8,17 @@
 //#define DEBUG
 
 #include "nsh.c"
+#include "benchmark/unix.c"
 #include "benchmark/shm.c"
-//#include "benchmark/unix.c"
-//#include "benchmark/tcp.c"
+#include "benchmark/tcp.c"
 
-int times = 1;
+int times = 1000000;
 
 int main() {
-    printf("aaaa");
-
     //shm_test();
 
-    //printf("Unix socket: %f IO/s\n", unix_benchmark());
-    printf("        Shm: %f IO/s\n", shm_benchmark());
+    printf("Shared memory IPC          : %f IO/s\n", shm_benchmark());
+    printf("Unix domain socket (stream): %f IO/s\n", unix_benchmark());
+    printf("loopback TCP               : %f IO/s\n", tcp_benchmark());
     return 0;
 }
