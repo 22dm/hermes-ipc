@@ -2,9 +2,9 @@
 #include <arpa/inet.h>
 
 const int tcp_buf_size = 8192;
-char tcp_buf[tcp_buf_size];
+char tcp_buf[8192];
 
-extern int times;
+extern long times;
 
 int tcp_sendfd, tcp_recvfd;
 int new_fd;
@@ -53,22 +53,27 @@ void tcp_pre(){
 
 void* tcp_send(){
     //发送
-    const char *str = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    //const char *str = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+    char str[8192];
 
     for (long i = 0; i < times; i++) {
-        send(tcp_sendfd, str, strlen(str), 0);
+        send(tcp_sendfd, str, 8192, 0);
     }
+
+    return NULL;
 }
 
 void* tcp_recv(){
-    int send_size = times * 372;
+    long send_size = times * 8192;
     int recv_size = 0;
     //接收
     while (recv_size < send_size){
         recv_size += recv(new_fd, tcp_buf, tcp_buf_size, 0);
     }
-    printf("%d\n", recv_size, tcp_buf);
+    printf("%d\n", recv_size);
 
+    return NULL;
 }
 
 void tcp_run() {

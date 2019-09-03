@@ -1,0 +1,2 @@
+#define TEST_BUF_SIZE 65536
+#define TEST_DATA_SIZE 512

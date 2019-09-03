@@ -1,7 +1,8 @@
-const int shm_buf_size = 8192;
-char shm_buf[shm_buf_size];
+#include "constValue.h"
 
-extern int times;
+char shm_buf[TEST_BUF_SIZE];
+
+extern long times;
 
 int shm_sendfd, shm_recvfd;
 int new_fd;
@@ -52,21 +53,27 @@ void shm_pre() {
 
 void* shm_send(){
     //发送
-    const char *str = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    //const char *str = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+    char str[TEST_DATA_SIZE];
 
     for (long i = 0; i < times; i++) {
-        nsh_send(shm_sendfd, str, strlen(str), 0);
+        nsh_send(shm_sendfd, (void *) str, TEST_DATA_SIZE, 0);
     }
+
+    return NULL;
 }
 
 void* shm_recv(){
-    int send_size = times * 372;
+    long send_size = times * TEST_DATA_SIZE;
     int recv_size = 0;
     //接收
     while (recv_size < send_size){
-        recv_size += nsh_recv(new_fd, shm_buf, shm_buf_size, 0);
+        recv_size += nsh_recv(new_fd, shm_buf, TEST_BUF_SIZE, 0);
     }
-    printf("%d\n", recv_size, shm_buf);
+    printf("%d\n", recv_size);
+
+    return NULL;
 }
 
 void shm_run() {
